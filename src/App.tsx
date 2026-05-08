@@ -19,6 +19,8 @@ import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Account from "./pages/Account";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 // Pages (Admin)
 import Dashboard from "./pages/admin/Dashboard";
@@ -42,6 +44,8 @@ export default function App() {
                 <Route path="login" element={<Login />} />
                 <Route path="register" element={<Register />} />
                 <Route path="account" element={<Account />} />
+                <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="terms-of-service" element={<TermsOfService />} />
               </Route>
 
               <Route

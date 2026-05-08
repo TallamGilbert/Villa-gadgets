@@ -24,6 +24,7 @@ export default function Dashboard() {
     orderCount: 0,
     pendingOrders: 0,
     outOfStock: 0,
+    totalStock: 0,
   });
   const [lowStock, setLowStock] = useState<
     Pick<Product, "id" | "name" | "stock_quantity">[]
@@ -69,10 +70,21 @@ export default function Dashboard() {
         const outOfStock = products.filter(
           (p) => p.stock_quantity === 0,
         ).length;
+
+        // Calculate the total sum of all stock
+        const totalStockCount = products.reduce(
+          (acc, p) => acc + (p.stock_quantity || 0),
+          0,
+        );
+
         const urgent = products.filter(
           (p) => p.stock_quantity > 0 && p.stock_quantity < LOW_STOCK_THRESHOLD,
         );
-        setStats((prev) => ({ ...prev, outOfStock }));
+        setStats((prev) => ({
+          ...prev,
+          outOfStock,
+          totalStock: totalStockCount,
+        }));
         setLowStock(urgent);
       }
     } catch (err: any) {
@@ -133,6 +145,12 @@ export default function Dashboard() {
           value={stats.pendingOrders.toString()}
           icon={Clock}
           accent={stats.pendingOrders > 0 ? "yellow" : "blue"}
+        />
+        <StatCard
+          title="Total Stock"
+          value={stats.totalStock.toLocaleString()}
+          icon={PackageX}
+          accent="blue"
         />
         <StatCard
           title="Out of Stock"

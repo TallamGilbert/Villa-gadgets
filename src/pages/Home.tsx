@@ -80,50 +80,63 @@ export default function Home() {
   return (
     <div className="flex flex-col w-full bg-white text-slate-950">
       {/* Hero */}
-      <section className="relative pt-24 pb-32 overflow-hidden border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 flex flex-col md:flex-row items-center gap-16">
+      {/* Hero */}
+      {/* Hero: Centered Text + Full-Bleed Image Below */}
+      <section className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-b from-[#eef2ff] via-[#f8fafc] to-white">
+        {/* Top: Centered text block */}
+        <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full flex flex-col items-center text-center py-24 md:py-20">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="md:w-1/2"
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="flex flex-col items-center text-center"
           >
-            <span className="text-xs tracking-[0.2em] uppercase text-slate-400 mb-4 block font-semibold">
-              Premium Hardware
+            <span className="text-sm tracking-[0.25em] uppercase text-slate-500 mb-6 block font-bold">
+              Genuine Tech, Delivered.
             </span>
-            <h1 className="text-6xl md:text-8xl font-medium leading-[0.9] tracking-tighter mb-8">
-              The Future <br />
-              <span className="italic font-serif">of Smart.</span>
+            <h1 className="text-7xl md:text-[80px] font-medium leading-[0.85] tracking-tightest mb-10 text-slate-950">
+              Kenya's Trusted Source for <br />
+              <span className="italic font-serif text-slate-900">
+                Premium Electronics.
+              </span>
             </h1>
-            <p className="text-slate-500 text-lg max-w-sm mb-10 leading-relaxed">
-              Premium devices, local reliability. Lightning-fast delivery and
-              secure M-Pesa payments.
+            <p className="text-slate-600 text-xl max-w-md mb-12 leading-relaxed">
+              From smartphones and laptops to 4K TVs. All 100% genuine,
+              warrantied, and delivered fast. Pay securely with MPesa.
             </p>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-6 justify-center w-full">
               <Link to="/shop">
-                <Button className="bg-black hover:bg-slate-800 text-white px-8 h-12 rounded-none">
+                <Button className="bg-slate-950 hover:bg-slate-800 text-white px-10 h-14 rounded-none text-lg font-semibold transition-all hover:scale-105">
                   Shop Now
                 </Button>
               </Link>
-              <Link to="/shop?price=p1">
-                <Button
-                  variant="outline"
-                  className="px-8 h-12 border-slate-200 rounded-none hover:bg-slate-50"
-                >
-                  Budget Picks
-                </Button>
+              <Link
+                to="/shop?price=p1"
+                className="group text-lg font-semibold flex items-center gap-2 text-slate-800 hover:text-slate-950 transition-colors"
+              >
+                Today's Deals
+                <span className="transition-transform group-hover:translate-x-1">
+                  →
+                </span>
               </Link>
             </div>
           </motion.div>
-
-          <div className="md:w-1/2 flex justify-center">
-            <div className="w-[280px] h-[540px] bg-slate-100 border border-slate-200 relative">
-              <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-bold tracking-widest">
-                VG
-              </div>
-            </div>
-          </div>
         </div>
+
+        {/* Bottom: Full-bleed image, no padding */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          className="relative w-full h-[320px] md:h-[420px] overflow-hidden rounded-tl-3xl rounded-tr-3xl"
+        >
+          <img
+            src="https://images.unsplash.com/photo-1707438095940-1eee18e85400?q=80&w=1631&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            alt="Premium smartphone"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent" />
+        </motion.div>
       </section>
 
       {/* Trust bar */}

@@ -80,7 +80,6 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold text-gray-900 mb-6">Support</h4>
             <ul className="space-y-4">
-
               <li>
                 <a
                   href="#"
@@ -137,12 +136,18 @@ export default function Footer() {
             Registered in Kenya.
           </p>
           <div className="flex space-x-6">
-            <a href="#" className="text-gray-400 hover:text-gray-600 text-xs">
+            <Link
+              to="/privacy-policy"
+              className="text-gray-400 hover:text-gray-600 text-xs"
+            >
               Privacy Policy
-            </a>
-            <a href="#" className="text-gray-400 hover:text-gray-600 text-xs">
+            </Link>
+            <Link
+              to="/terms-of-service"
+              className="text-gray-400 hover:text-gray-600 text-xs"
+            >
               Terms of Service
-            </a>
+            </Link>
           </div>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import { supabase } from "../lib/supabase";
 import { Product, Category } from "../types";
 
+const PAGE_SIZE = 12;
+
 const PRODUCT_SELECT = `
   *,
   category:categories(*),
@@ -157,15 +159,13 @@ export const productService = {
     // Replace attributes
     await supabase.from("product_attributes").delete().eq("product_id", id);
     if (attributes.length > 0) {
-      await supabase
-        .from("product_attributes")
-        .insert(
-          attributes.map((a) => ({
-            product_id: id,
-            name: a.name,
-            value: a.value,
-          })),
-        );
+      await supabase.from("product_attributes").insert(
+        attributes.map((a) => ({
+          product_id: id,
+          name: a.name,
+          value: a.value,
+        })),
+      );
     }
 
     // Replace tags
@@ -178,6 +178,76 @@ export const productService = {
   async delete(id: string): Promise<void> {
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) throw error;
+  },
+
+  async getPaginated({
+    page = 1,
+    category,
+    brand,
+    priceRange,
+    sort,
+    search,
+  }: {
+    page: number;
+    category?: string;
+    brand?: string;
+    priceRange?: string;
+    sort?: string;
+    search?: string;
+  }): Promise<{ products: Product[]; total: number; totalPages: number }> {
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let query = supabase
+      .from("products")
+      .select(PRODUCT_SELECT, { count: "exact" });
+
+    // Category filter
+    if (category && category !== "all") {
+      const { data: cat } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("slug", category)
+        .single();
+      if (cat) query = query.eq("category_id", cat.id);
+    }
+
+    // Brand filter
+    if (brand && brand !== "All") {
+      query = query.eq("brand", brand);
+    }
+
+    // Price filter
+    if (priceRange === "p1") query = query.lt("price", 20000);
+    if (priceRange === "p2")
+      query = query.gte("price", 20000).lte("price", 50000);
+    if (priceRange === "p3") query = query.gt("price", 50000);
+
+    // Search
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,brand.ilike.%${search}%`);
+    }
+
+    // Sort
+    if (sort === "price-low") query = query.order("price", { ascending: true });
+    else if (sort === "price-high")
+      query = query.order("price", { ascending: false });
+    else query = query.order("created_at", { ascending: false });
+
+    // Pagination
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
+    if (error) throw error;
+
+    const total = count || 0;
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+
+    return {
+      products: (data || []).map(normalizeProduct),
+      total,
+      totalPages,
+    };
   },
 };
 

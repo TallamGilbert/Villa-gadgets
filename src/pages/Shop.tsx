@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { productService } from "../services/productService";
-import { Product, ProductCategory } from "../types";
+import { Product } from "../types";
 import { cn } from "../lib/utils";
-import { ChevronDown, Package } from "lucide-react";
+import { ChevronDown, Package, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 
 const CATEGORIES = [
@@ -34,15 +34,36 @@ const BRANDS = [
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("search") || "",
+  );
   const [products, setProducts] = useState<Product[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  const activeCategory = searchParams.get("category") || "all";
+  const activeBrand = searchParams.get("brand") || "All";
+  const activePriceRange = searchParams.get("price") || "All";
+  const sortBy = searchParams.get("sort") || "newest";
+  const currentPage = Number(searchParams.get("page") || "1");
+
+  // Fetch whenever any filter or page changes
   useEffect(() => {
     async function fetchProducts() {
+      setLoading(true);
       try {
-        const data = await productService.getAll();
-        setProducts(data);
+        const result = await productService.getPaginated({
+          page: currentPage,
+          category: activeCategory,
+          brand: activeBrand,
+          priceRange: activePriceRange,
+          sort: sortBy,
+          search: searchQuery,
+        });
+        setProducts(result.products);
+        setTotal(result.total);
+        setTotalPages(result.totalPages);
       } catch (err: any) {
         console.error("Error fetching:", err.message);
       } finally {
@@ -50,62 +71,44 @@ export default function Shop() {
       }
     }
     fetchProducts();
-  }, []);
-
-  const activeCategory = searchParams.get("category") || "all";
-  const activeBrand = searchParams.get("brand") || "All";
-  const activePriceRange = searchParams.get("price") || "All";
-  const sortBy = searchParams.get("sort") || "newest";
-
-  const filteredProducts = useMemo(() => {
-    return products
-      .filter((product) => {
-        const matchCategory =
-          activeCategory === "all" || product.category?.slug === activeCategory;
-        const matchBrand =
-          activeBrand === "All" || product.brand === activeBrand;
-        const matchSearch =
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.brand.toLowerCase().includes(searchQuery.toLowerCase());
-
-        let matchPrice = true;
-        if (activePriceRange === "p1") matchPrice = product.price < 20000;
-        if (activePriceRange === "p2")
-          matchPrice = product.price >= 20000 && product.price <= 50000;
-        if (activePriceRange === "p3") matchPrice = product.price > 50000;
-
-        return matchCategory && matchBrand && matchSearch && matchPrice;
-      })
-      .sort((a, b) => {
-        if (sortBy === "price-low") return a.price - b.price;
-        if (sortBy === "price-high") return b.price - a.price;
-        return 0;
-      });
   }, [
-    products,
     activeCategory,
     activeBrand,
-    searchQuery,
     activePriceRange,
     sortBy,
+    currentPage,
+    searchQuery,
   ]);
 
   const setParam = (key: string, value: string, deleteIfDefault?: string) => {
+    const next = new URLSearchParams(searchParams);
     if (deleteIfDefault && value === deleteIfDefault) {
-      searchParams.delete(key);
+      next.delete(key);
     } else {
-      searchParams.set(key, value);
+      next.set(key, value);
     }
-    setSearchParams(searchParams);
+    // Reset to page 1 whenever a filter changes
+    if (key !== "page") next.delete("page");
+    setSearchParams(next);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">Loading...</div>
-      </div>
-    );
-  }
+  const goToPage = (page: number) => {
+    const next = new URLSearchParams(searchParams);
+    if (page === 1) {
+      next.delete("page");
+    } else {
+      next.set("page", String(page));
+    }
+    setSearchParams(next);
+    // Scroll to top of product grid
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const hasActiveFilters =
+    activeCategory !== "all" ||
+    activeBrand !== "All" ||
+    activePriceRange !== "All" ||
+    searchQuery;
 
   return (
     <div className="pt-32 pb-24 min-h-screen bg-white text-slate-950">
@@ -146,7 +149,10 @@ export default function Shop() {
               placeholder="Search..."
               className="w-full py-2 bg-transparent border-b border-slate-200 focus:border-black outline-none transition-colors placeholder:text-slate-300 text-sm"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setParam("search", e.target.value);
+              }}
             />
 
             {/* Categories */}
@@ -239,10 +245,7 @@ export default function Shop() {
             </div>
 
             {/* Reset */}
-            {(activeCategory !== "all" ||
-              activeBrand !== "All" ||
-              activePriceRange !== "All" ||
-              searchQuery) && (
+            {hasActiveFilters && (
               <button
                 onClick={() => {
                   setSearchParams({});
@@ -279,18 +282,31 @@ export default function Shop() {
               </div>
             )}
 
-            {filteredProducts.length > 0 ? (
-              <>
-                <p className="text-xs text-slate-400 uppercase tracking-widest mb-8">
-                  {filteredProducts.length} item
-                  {filteredProducts.length !== 1 ? "s" : ""}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-16">
-                  {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              </>
+            {/* Result count */}
+            {!loading && (
+              <p className="text-xs text-slate-400 uppercase tracking-widest mb-8">
+                {total} item{total !== 1 ? "s" : ""}
+                {totalPages > 1 && ` — page ${currentPage} of ${totalPages}`}
+              </p>
+            )}
+
+            {/* Grid */}
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-16">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="aspect-square bg-slate-100 rounded-2xl mb-4" />
+                    <div className="h-4 bg-slate-100 rounded w-3/4 mb-2" />
+                    <div className="h-4 bg-slate-100 rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-16">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-40 border border-slate-100">
                 <Package
@@ -306,6 +322,71 @@ export default function Shop() {
                   className="text-xs font-bold uppercase tracking-widest border border-black px-8 py-3 hover:bg-black hover:text-white transition-colors"
                 >
                   Reset Filters
+                </button>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-16">
+                {/* Previous */}
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-slate-200 hover:border-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((page) => {
+                    // Always show first, last, current, and pages adjacent to current
+                    return (
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - currentPage) <= 1
+                    );
+                  })
+                  .reduce<(number | "...")[]>((acc, page, idx, arr) => {
+                    // Insert ellipsis where pages are skipped
+                    if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
+                      acc.push("...");
+                    }
+                    acc.push(page);
+                    return acc;
+                  }, [])
+                  .map((item, idx) =>
+                    item === "..." ? (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="px-2 text-slate-400 text-sm"
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        onClick={() => goToPage(item as number)}
+                        className={cn(
+                          "w-9 h-9 rounded-lg text-sm font-medium transition-all",
+                          currentPage === item
+                            ? "bg-black text-white"
+                            : "border border-slate-200 hover:border-black text-slate-600",
+                        )}
+                      >
+                        {item}
+                      </button>
+                    ),
+                  )}
+
+                {/* Next */}
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-slate-200 hover:border-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             )}

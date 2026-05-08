@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { productService } from "../../services/productService";
 import { Product, Category } from "../../types";
 import {
@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
   AlertTriangle,
   Star,
+  ChevronRight,
 } from "lucide-react";
 
 const getFirstImage = (product: Product) =>
